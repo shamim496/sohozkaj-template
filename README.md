@@ -355,7 +355,7 @@ Re-run it after a design-system re-export; do not hand-edit the path data.
 
 ## Android build notes
 
-Three fixes are applied automatically (by `scripts/with-android-env.mjs` at run
+Four fixes are applied automatically (by `scripts/with-android-env.mjs` at run
 time and `plugins/withAndroidBuildEnv.js` at prebuild), all caused by the space
 in `C:\Users\Shamim Hasan\`:
 
@@ -394,6 +394,35 @@ powershell -Command "New-Item -ItemType Junction -Path C:\AndroidSdk -Target \"$
    against projects AGP has already configured and Gradle fails the build with
    *"It is too late to set ndkPath."* The plugin inserts at the right anchor and
    throws at prebuild if it cannot find one.
+
+4. **A working `:expo-modules-core:generateStubPCH`** — this is the one that
+   makes Android Studio *sync*. Upstream (57.0.10, current latest) builds that
+   task's clang command by splitting the `compile_commands.json` entry on every
+   space, and locates the paths to rewrite with a no-whitespace regex. Both
+   assume no path contains a space, so under this project root the arguments
+   reach clang in fragments:
+
+```
+clang++: error: no such file or directory: 'C:/Users/Shamim C:/Users/Shamim Hasan/…/stub_pch.hxx'
+clang++: error: no input files
+```
+
+   The task is an IDE helper: it pre-creates a throwaway PCH so Android Studio's
+   C++ engine has one to read during sync, then backdates it so ninja rebuilds
+   the real one. It is wired into `prepareKotlinBuildScriptModel`, the first
+   thing a sync runs — so sync dies on it while builds are unaffected, which is
+   why this stayed invisible from the command line.
+
+   The plugin injects an `allprojects` block replacing the task's action with the
+   same logic minus the two assumptions: split the command the way a shell would,
+   and swap whole argv entries instead of rewriting the command string.
+   Overriding from the root project rather than patching `node_modules` is what
+   survives `npm install`; regenerating it at prebuild is what survives
+   `prebuild --clean`.
+
+   Verified by deleting PCH files and running
+   `./gradlew prepareKotlinBuildScriptModel`: clang rewrites them (`CPCH` magic
+   bytes) and the full-size PCHs from earlier real builds are left alone.
 
 Debug builds get a `.dev` application id suffix
 (`plugins/withDebugAppIdSuffix.js`) so a debug and a release build can sit on the
