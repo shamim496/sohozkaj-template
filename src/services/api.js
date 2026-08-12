@@ -19,7 +19,17 @@ const PUBLIC_ENDPOINTS = ['/auth/login', '/auth/send-otp', '/auth/verify-otp'];
 
 // A 401 from these is a normal failed-credentials response, not an expired
 // session — never force a logout for them.
-const AUTH_ENDPOINTS = [...PUBLIC_ENDPOINTS, '/auth/forgot-password', '/auth/reset-password'];
+//
+// `/auth/change-password` is on the list for exactly that reason: the server
+// answers a wrong *current* password with a 401, and without this entry
+// mistyping it would sign the user out of the app and blame a device they never
+// used.
+const AUTH_ENDPOINTS = [
+  ...PUBLIC_ENDPOINTS,
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/change-password',
+];
 
 apiClient.interceptors.request.use(
   (config) => {
@@ -62,7 +72,12 @@ apiClient.interceptors.response.use(
       // protected endpoint — a 401 from /auth/login is just a wrong password.
       if (getToken() && !isAuthEndpoint && getCurrentPath() !== '/login') {
         handleUnauthorized();
-        return Promise.reject(new Error('Your session has expired. Please sign in again.'));
+        // `status` is set here too, not only on the fall-through below: callers
+        // that must not mistake a dead session for a real answer — the payment
+        // settlement is the one that matters — branch on it.
+        const expired = new Error('Your session has expired. Please sign in again.');
+        expired.status = status;
+        return Promise.reject(expired);
       }
     }
 

@@ -12,8 +12,10 @@ the same session rules, but only the AI-template half of it:
 | **Template** | Photo slots, admin-defined fields, generate | `GET /api/ai-templates/:id`, `POST /api/ai-templates/:id/generate` |
 | **Creations** | Everything this account has generated from a template | `GET /api/image-generation/history?source=ai-templates` |
 | **Favourites** | Hearted templates — **device-local**, see below | — |
-| **Credits** | Balance, price per generate, packages, ledger | `GET /api/credits/history`, `/costs`, `GET /api/plans` |
+| **Credits** | Balance, price per generate, packages, buying, ledger | `GET /api/credits/history`, `/costs`, `/config`, `GET /api/plans`, `POST /api/payments/[ssl/]checkout`, `/verify/:ref`, `GET /api/payments/status/:orderId` |
 | **Profile** | Account, language, two local switches, shop, sign out | `GET /api/auth/me`, `GET /api/office-spaces` |
+| **My profile** | Editing the account, avatar, password | `PUT /api/auth/profile`, `POST /api/auth/profile/picture`, `/change-password` |
+| **Payments** | What this account has paid for, and a recheck | `GET /api/payments/history` |
 
 Accounts are created in the main SohozKaj app; this one signs in with the same
 credentials and has no register or password-reset flow.
@@ -66,6 +68,9 @@ app/
   onboarding.jsx       three slides, once
   login.jsx
   credits.jsx
+  profile-edit.jsx     the editable account form
+  change-password.jsx
+  payments.jsx         purchase history
   template/[id].jsx    form → generating → result, one route
   result/[id].jsx      an older result, opened from Creations
   (tabs)/
@@ -117,10 +122,15 @@ template* — real, and browseable.
 control that charges 20 credits to remove a watermark nothing applies would be a
 lie; the prototype's version spent a local variable.
 
-**Packages are read-only.** They are real — `GET /api/plans` is what the website
-sells, so a price change upstream lands here with no release. Buying is not
-wired: `POST /api/payments/checkout` needs a gateway redirect, status polling and
-a verify step against live money. Tapping a package says where to buy.
+**Buying works, in a WebView, for Bangladesh only.** `POST
+/api/payments/{ssl/,}checkout` returns the gateway's page URL, the app hosts it,
+watches for the return redirect and settles the order against `/verify` then
+`/status`. It has to be a WebView: the backend builds the return URLs itself and
+finishes with a hard-coded 302 to `${FRONTEND_URL}/payment/success|failed`, so
+there is no app scheme to hand a browser and no other way to learn how it ended.
+Non-Bangladesh accounts and `packageType: 'others'` packages still point at the
+website — FastSpring returns a `sessionId` for a JS popup, with no redirect URL
+and no verify endpoint, so there is nothing a native client can drive.
 
 **The share sheet is the OS one.** The design draws app tiles (Facebook,
 WhatsApp, Messenger). Those would either deep-link per app — breaking the moment
@@ -222,6 +232,34 @@ is tagged on the way into the store (`asTemplateImageRef`).
 **Ledger direction is read off the balance, not the amount.** A deduction and a
 top-up both store a positive `cost`; only `balanceBefore` → `balanceAfter` says
 which way it went.
+
+**A purchase needs a native rebuild.** `react-native-webview` is a native
+module, so `npm run android` (or `expo prebuild` + a build) is required before
+the Buy button works — an existing dev build and Expo Go both crash on the
+import. Nothing else in the app touches it.
+
+**Every test purchase is a real charge.** `activePaymentGateway` defaults to
+`sslCommerz` and `SSLCommerzService` defaults to the *live* host, while
+`.env.development` points at the live API. Use the cheapest plan, or a staging
+`EXPO_PUBLIC_API_URL`.
+
+**PENDING is a real answer, not a spinner.** SSLCommerz holds a risk-flagged
+payment for manual review and reports it as pending with the credits not
+granted, so the copy promises a later arrival rather than a wait of seconds. The
+redirect's own `reason` is what distinguishes a cancel from that — a cancelled
+Moneybag order has nothing to verify and would otherwise sit PENDING for a day
+while the user is told credits are coming.
+
+**`FAILED` does not mean "no money moved".** `evaluateAndSettle` writes FAILED on
+the tran_id and amount mismatch paths, both of which are only reachable *after*
+the gateway reported the transaction valid. No copy in this app tells a user
+they were not charged.
+
+**Profile saves are a diff, never the whole form.** `AuthService.updateProfile`
+reads an absent key as "leave it alone" and `null` as "clear it", and the cached
+user can be the thin login projection. Sending the form wholesale off that
+object writes null over six columns the user never saw — so the screen waits for
+`/auth/me`, keeps the result, and sends only what changed.
 
 **One session per account, enforced by the backend.** `src/middleware/auth.js` in
 `sohozkaj-backend` compares the JWT's `sessionToken` against the user's current

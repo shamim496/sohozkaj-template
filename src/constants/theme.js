@@ -43,6 +43,8 @@ export const COLOR = {
   green500: '#00C950',
   green600: '#00A63E',
   greenInk: '#0CA678',
+  green050: '#E9F9F2',
+  red050: '#FFF1F0',
   blue500: '#2B7FFF',
   blue700: '#1D4ED8',
   blue050: '#EBF5FF',

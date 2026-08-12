@@ -32,6 +32,20 @@ export const useAuthStore = create(
 
       logout: () => set({ user: null, token: null, isAuthenticated: false }),
 
+      /**
+       * Merge a partial profile the server just returned into the cached one.
+       *
+       * The profile screen edits the account, and the header, the profile card
+       * and the avatar all read this object — so a save writes through here
+       * rather than waiting for the next `refreshUser()` on app entry.
+       *
+       * A merge and not a replacement: these `/api/auth` responses are narrower
+       * than `/me` (the update one omits `phoneVerified` and `emailVerified`),
+       * and overwriting wholesale would drop `role` and `country` — which the
+       * credits screen reads to decide whether this account may buy at all.
+       */
+      setUser: (user) => set((state) => ({ user: { ...state.user, ...user } })),
+
       /** Refreshes the profile (and therefore the credit balance on it). */
       refreshUser: async () => {
         try {

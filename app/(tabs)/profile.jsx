@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import AppHeader from '../../src/components/AppHeader';
@@ -164,23 +165,36 @@ export default function Profile() {
             ...SHADOW.card,
           }}
         >
-          <LinearGradient
-            colors={GRADIENT.login.colors}
-            start={GRADIENT.login.start}
-            end={GRADIENT.login.end}
-            style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Text style={[heading(21, '800'), { color: COLOR.white }]}>{initial}</Text>
-          </LinearGradient>
+          {/* The gradient initial is the design's avatar. It stays the default
+              — an account only has a picture once it has uploaded one. */}
+          <Pressable onPress={() => router.push('/profile-edit')}>
+            {user?.profilePicture ? (
+              <Image
+                source={{ uri: user.profilePicture }}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                style={{ width: 56, height: 56, borderRadius: 28 }}
+              />
+            ) : (
+              <LinearGradient
+                colors={GRADIENT.login.colors}
+                start={GRADIENT.login.start}
+                end={GRADIENT.login.end}
+                style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={[heading(21, '800'), { color: COLOR.white }]}>{initial}</Text>
+              </LinearGradient>
+            )}
+          </Pressable>
 
-          <View style={{ flex: 1 }}>
+          <Pressable style={{ flex: 1 }} onPress={() => router.push('/profile-edit')}>
             <Text style={[heading(16, '700'), { color: COLOR.ink800 }]} numberOfLines={1}>
               {user?.name || '—'}
             </Text>
             <Text style={[body(12.5), { color: COLOR.ink500, marginTop: 2 }]} numberOfLines={1}>
               {user?.phone || user?.email || ''}
             </Text>
-          </View>
+          </Pressable>
 
           <Pressable
             onPress={() => router.push('/credits')}
@@ -248,9 +262,12 @@ export default function Profile() {
           />
         </View>
 
+        {/* pl3 and pl4 keep the toast: support is a phone number and a WhatsApp
+            line the API does not serve, and the terms are a page on the
+            website. Neither has anything to render here. */}
         <View style={card}>
-          <LinkRow label={t.pl1} onPress={() => toast.info(t.manageInApp)} />
-          <LinkRow label={t.pl2} onPress={() => toast.info(t.manageInApp)} />
+          <LinkRow label={t.pl1} onPress={() => router.push('/profile-edit')} />
+          <LinkRow label={t.pl2} onPress={() => router.push('/payments')} />
           <LinkRow label={t.pl3} onPress={() => toast.info(t.manageInApp)} />
           <LinkRow label={t.pl4} onPress={() => toast.info(t.manageInApp)} last />
         </View>
