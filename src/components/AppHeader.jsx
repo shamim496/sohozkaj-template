@@ -16,7 +16,7 @@ import { useCreditStore } from '../store/creditStore';
  */
 export default function AppHeader({ title, onBack, showBack = false, showCredits = true }) {
   const insets = useSafeAreaInsets();
-  const { t, num } = useT();
+  const { num } = useT();
   const balance = useCreditStore((s) => s.balance);
 
   const back = onBack || (showBack ? () => (router.canGoBack() ? router.back() : router.replace('/')) : null);
@@ -61,6 +61,9 @@ export default function AppHeader({ title, onBack, showBack = false, showCredits
           <Pressable
             onPress={() => router.push('/credits')}
             style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
               borderWidth: 1,
               borderColor: 'rgba(152,16,250,.22)',
               backgroundColor: COLOR.violet050,
@@ -69,11 +72,22 @@ export default function AppHeader({ title, onBack, showBack = false, showCredits
               paddingHorizontal: 12,
             }}
           >
+            {/* The design's chip is the generate spark plus the number alone —
+                no "credits" word, because the glyph already says what it is. */}
+            <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M12 3v3m0 12v3M3 12h3m12 0h3M5.636 5.636l2.122 2.122m8.485 8.485 2.121 2.121M5.636 18.364l2.122-2.121m8.485-8.486 2.121-2.121"
+                stroke={COLOR.violet500}
+                strokeWidth={2.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
             {/* An unloaded balance shows an em dash rather than a zero — telling
                 someone they have 0 credits when the request simply has not come
                 back yet sends them to the packages screen for nothing. */}
             <Text style={[body(12, '700'), { color: COLOR.violet500 }]}>
-              {balance == null ? '—' : num(balance)} {t.creditWord}
+              {balance == null ? '—' : num(balance)}
             </Text>
           </Pressable>
         ) : null}

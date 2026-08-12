@@ -422,36 +422,59 @@ export function Heart({ filled, size = 16, color }) {
   );
 }
 
-/** A settings switch. 44×26 track, 20px knob — the prototype's dimensions. */
+/**
+ * A settings switch: 46×27 track, 21px knob — the design's dimensions.
+ *
+ * "On" is the account gradient rather than a flat colour, which is why the
+ * track is a `LinearGradient` with the off state painted over it: RN cannot put
+ * a gradient in `backgroundColor`, and swapping the element type between states
+ * would drop the press target for a frame.
+ */
 export function Switch({ value, onPress }) {
+  const knob = (
+    <View
+      style={{
+        width: 21,
+        height: 21,
+        borderRadius: 10.5,
+        backgroundColor: COLOR.white,
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 1 },
+        elevation: 2,
+      }}
+    />
+  );
+
+  const track = {
+    width: 46,
+    height: 27,
+    borderRadius: RADIUS.pill,
+    padding: 3,
+    flexDirection: 'row',
+    justifyContent: value ? 'flex-end' : 'flex-start',
+    alignItems: 'center',
+  };
+
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="switch"
       accessibilityState={{ checked: !!value }}
-      style={{
-        width: 44,
-        height: 26,
-        borderRadius: RADIUS.pill,
-        padding: 3,
-        flexDirection: 'row',
-        justifyContent: value ? 'flex-end' : 'flex-start',
-        backgroundColor: value ? COLOR.violet500 : GREY.track,
-      }}
     >
-      <View
-        style={{
-          width: 20,
-          height: 20,
-          borderRadius: 10,
-          backgroundColor: COLOR.white,
-          shadowColor: '#000',
-          shadowOpacity: 0.18,
-          shadowRadius: 3,
-          shadowOffset: { width: 0, height: 1 },
-          elevation: 2,
-        }}
-      />
+      {value ? (
+        <LinearGradient
+          colors={GRADIENT.login.colors}
+          start={GRADIENT.login.start}
+          end={GRADIENT.login.end}
+          style={track}
+        >
+          {knob}
+        </LinearGradient>
+      ) : (
+        <View style={[track, { backgroundColor: GREY.track }]}>{knob}</View>
+      )}
     </Pressable>
   );
 }

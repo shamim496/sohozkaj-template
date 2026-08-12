@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Redirect, Tabs } from 'expo-router';
 import BottomNav from '../../src/components/BottomNav';
-import TemplatePickerSheet from '../../src/components/TemplatePickerSheet';
 import { useAuthStore } from '../../src/store/authStore';
 import { useCreationsStore } from '../../src/store/creationsStore';
 import { useCreditStore } from '../../src/store/creditStore';
@@ -28,8 +27,6 @@ export default function TabsLayout() {
   const refreshCredits = useCreditStore((s) => s.refresh);
   const refreshUser = useAuthStore((s) => s.refreshUser);
   const refreshCreations = useCreationsStore((s) => s.refresh);
-
-  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -58,19 +55,16 @@ export default function TabsLayout() {
   if (!onboarded) return <Redirect href="/onboarding" />;
   if (!isAuthenticated) return <Redirect href="/login" />;
 
+  // The order here is the order the bar draws, and BottomNav resolves each tab
+  // by route name — so a screen added to this group without a matching entry in
+  // its TABS list simply has no tab, rather than shifting the others.
   return (
-    <>
-      <Tabs
-        screenOptions={{ headerShown: false }}
-        tabBar={(props) => <BottomNav {...props} onFabPress={() => setPickerOpen(true)} />}
-      >
-        <Tabs.Screen name="index" />
-        <Tabs.Screen name="creations" />
-        <Tabs.Screen name="favourites" />
-        <Tabs.Screen name="profile" />
-      </Tabs>
-
-      <TemplatePickerSheet open={pickerOpen} onClose={() => setPickerOpen(false)} />
-    </>
+    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <BottomNav {...props} />}>
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="creations" />
+      <Tabs.Screen name="favourites" />
+      <Tabs.Screen name="credits" />
+      <Tabs.Screen name="profile" />
+    </Tabs>
   );
 }

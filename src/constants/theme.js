@@ -205,7 +205,8 @@ export const body = (size, weight = '400', extra) => type(FONT.body, size, weigh
 // ── Layout ──────────────────────────────────────────────────────────────────
 export const LAYOUT = {
   headerHeight: 56,
-  tabBarHeight: 68,
+  // --mobile-nav-height. Five tabs, no FAB overhang to make room for.
+  tabBarHeight: 64,
   screenPadding: 16,
   /** Room under a scroll view so the tab bar never covers the last row. */
   scrollBottom: 120,

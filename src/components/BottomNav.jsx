@@ -1,38 +1,36 @@
 import { Pressable, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
-import { COLOR, GRADIENT, GREY, LAYOUT, SHADOW, heading } from '../constants/theme';
+import { COLOR, GRADIENT, GREY, LAYOUT, RADIUS, SHADOW, heading } from '../constants/theme';
 import { useT } from '../i18n';
 import ModuleIcon from './icons/ModuleIcon';
 
 /**
- * The four-tab bar with the generate FAB punched through its centre.
+ * The five-tab bar, ported from the design system's `BottomNav`.
  *
- * Two tabs, a fixed 78px gap, two tabs — the gap is what the FAB sits in, and it
- * is a spacer rather than a fifth flex child so the four labels stay evenly
- * spaced whatever the FAB is doing.
+ * Five evenly spread tabs and no centre FAB — Credits is a destination of its
+ * own here, not a screen pushed from the header. The active tab is orange
+ * (`--orange-500`), inactive `--ink-500`, and it carries two marks the design is
+ * specific about: a 3px red→orange indicator across the middle 60% of the tab's
+ * top edge, and an `--orange-050` well behind the icon.
  *
- * The icons come from the design system's own module set; the prototype's
- * mapping is followed exactly (`ai-templates` for Home, `bulk-photo-editing`
- * for Creations, `easy-tools` for Favourites, `job` for Profile) rather than
- * substituting more literal glyphs — the design system's iconography rule is to
- * use its own set first and never mix in another library's defaults.
+ * The icons come from the design system's own module set, in the mapping the
+ * prototype uses — `print-media` for Credits included. Its rule is to use that
+ * set first and never mix in another library's defaults.
  */
-
-/** How far the 60px FAB rises above the bar's top edge. */
-const FAB_OVERHANG = 22;
 
 const TABS = [
   { key: 'index', icon: 'ai-templates', label: 'nav1' },
   { key: 'creations', icon: 'bulk-photo-editing', label: 'nav2' },
   { key: 'favourites', icon: 'easy-tools', label: 'nav3' },
-  { key: 'profile', icon: 'job', label: 'nav4' },
+  { key: 'credits', icon: 'print-media', label: 'nav4' },
+  { key: 'profile', icon: 'job', label: 'nav5' },
 ];
 
 function Tab({ tab, active, onPress }) {
   const { t } = useT();
-  const tint = active ? COLOR.violet500 : GREY.navIdle;
+  const tint = active ? COLOR.orange500 : COLOR.ink500;
+
   return (
     <Pressable
       onPress={onPress}
@@ -41,13 +39,64 @@ function Tab({ tab, active, onPress }) {
       style={({ pressed }) => ({
         flex: 1,
         alignItems: 'center',
-        gap: 4,
-        paddingVertical: 8,
+        justifyContent: 'center',
+        gap: 3,
+        paddingTop: 8,
+        paddingBottom: 6,
+        paddingHorizontal: 4,
         opacity: pressed ? 0.7 : 1,
       })}
     >
-      <ModuleIcon name={tab.icon} size={22} color={tint} />
-      <Text numberOfLines={1} style={[heading(10.5, '700'), { color: tint }]}>
+      {/* The top indicator. Rendered always, transparent when inactive, so the
+          tab's height never changes as the selection moves. */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: '20%',
+          right: '20%',
+          height: 3,
+          borderBottomLeftRadius: 4,
+          borderBottomRightRadius: 4,
+          overflow: 'hidden',
+        }}
+      >
+        {active ? (
+          <LinearGradient
+            colors={[COLOR.red500, COLOR.orange500]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ flex: 1 }}
+          />
+        ) : null}
+      </View>
+
+      <View
+        style={{
+          width: 36,
+          height: 28,
+          borderRadius: RADIUS.md,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: active ? COLOR.orange050 : 'transparent',
+        }}
+      >
+        <ModuleIcon name={tab.icon} size={19} color={tint} />
+      </View>
+
+      {/* `alignSelf: stretch` + `textAlign: center` rather than letting the
+          label shrink-to-fit. Shrink-to-fit measured these Bengali labels short
+          and ellipsised them — "হোম" rendered as "…" inside a 269px tab — and
+          the tracking that `heading()` applies at larger sizes only makes the
+          measurement worse at 10px. Stretched, the label has the whole tab to
+          lay out in and the ellipsis never triggers. */}
+      <Text
+        numberOfLines={1}
+        style={[
+          heading(10, '600'),
+          { color: tint, lineHeight: 13, letterSpacing: 0, alignSelf: 'stretch', textAlign: 'center' },
+        ]}
+      >
         {t[tab.label]}
       </Text>
     </Pressable>
@@ -58,7 +107,7 @@ function Tab({ tab, active, onPress }) {
  * @param {{ state, navigation }} props expo-router hands these through from
  *        `<Tabs tabBar={…}>`; `state.index` is the focused route.
  */
-export default function BottomNav({ state, navigation, onFabPress }) {
+export default function BottomNav({ state, navigation }) {
   const insets = useSafeAreaInsets();
 
   const go = (index) => {
@@ -68,83 +117,25 @@ export default function BottomNav({ state, navigation, onFabPress }) {
     if (!event.defaultPrevented) navigation.navigate(route.name);
   };
 
-  // Order the visible tabs by the declared TABS list rather than by route order,
-  // so adding a hidden route to the group cannot reshuffle the bar.
+  // Order by the declared TABS list rather than by route order, so adding a
+  // hidden route to the group cannot reshuffle the bar.
   const indexOf = (key) => state.routes.findIndex((r) => r.name === key);
-  const left = TABS.slice(0, 2);
-  const right = TABS.slice(2);
 
   return (
-    // The FAB overhangs the bar by 22px. On Android a touch outside a parent's
-    // bounds is never delivered to its children, so the overhang cannot be a
-    // negative offset inside the bar — it lives in this taller transparent
-    // container instead. `box-none` keeps the empty strip above the bar from
-    // swallowing taps meant for the content behind it.
-    <View pointerEvents="box-none" style={{ paddingTop: FAB_OVERHANG }}>
-      <View
-        style={{
-          backgroundColor: COLOR.white,
-          borderTopWidth: 1,
-          borderTopColor: GREY.hairline,
-          paddingBottom: insets.bottom,
-          ...SHADOW.nav,
-        }}
-      >
-        <View style={{ height: LAYOUT.tabBarHeight, flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ flex: 1, flexDirection: 'row' }}>
-            {left.map((tab) => {
-              const i = indexOf(tab.key);
-              return <Tab key={tab.key} tab={tab} active={state.index === i} onPress={() => go(i)} />;
-            })}
-          </View>
-
-          <View style={{ width: 78 }} />
-
-          <View style={{ flex: 1, flexDirection: 'row' }}>
-            {right.map((tab) => {
-              const i = indexOf(tab.key);
-              return <Tab key={tab.key} tab={tab} active={state.index === i} onPress={() => go(i)} />;
-            })}
-          </View>
-        </View>
-      </View>
-
-      <View
-        pointerEvents="box-none"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' }}
-      >
-        <Pressable
-          onPress={onFabPress}
-          accessibilityRole="button"
-          style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }] })}
-        >
-          <LinearGradient
-            colors={GRADIENT.login.colors}
-            start={GRADIENT.login.start}
-            end={GRADIENT.login.end}
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              borderWidth: 4,
-              borderColor: COLOR.white,
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...SHADOW.fab,
-            }}
-          >
-            {/* The design's generate spark — a hand-drawn 2.2-stroke glyph, not
-                an icon-font sparkle. */}
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.2 2.2m8.4 8.5 2.2 2.1M5.6 18.4l2.2-2.1m8.4-8.5 2.2-2.1"
-                stroke={COLOR.white}
-                strokeWidth={2.2}
-                strokeLinecap="round"
-              />
-            </Svg>
-          </LinearGradient>
-        </Pressable>
+    <View
+      style={{
+        backgroundColor: COLOR.white,
+        borderTopWidth: 1,
+        borderTopColor: GREY.hairline,
+        paddingBottom: insets.bottom,
+        ...SHADOW.nav,
+      }}
+    >
+      <View style={{ height: LAYOUT.tabBarHeight, flexDirection: 'row', alignItems: 'stretch' }}>
+        {TABS.map((tab) => {
+          const i = indexOf(tab.key);
+          return <Tab key={tab.key} tab={tab} active={state.index === i} onPress={() => go(i)} />;
+        })}
       </View>
     </View>
   );

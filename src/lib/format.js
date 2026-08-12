@@ -20,6 +20,58 @@ export const categoryLabel = (category, lang) =>
   (lang === 'bn' && category?.nameBn?.trim()) || category?.name || '';
 
 /**
+ * A credit ledger row's label.
+ *
+ * The ledger is the account's whole credit history, not this app's — the same
+ * balance pays for document sets, prints and question papers in the other
+ * SohozKaj apps, and those rows arrive with only a `CreditModule` enum on them.
+ * Printing the enum raw ("QUESTION_PAPER") is what the row looked like before
+ * this existed.
+ *
+ * A template generate carries `metadata.templateName`, which is better than any
+ * of these, so it wins when present.
+ */
+const MODULE_LABELS = {
+  bn: {
+    DOCUMENT: 'ডকুমেন্ট',
+    IMAGE: 'এআই ছবি এডিট',
+    IMAGE_MANUAL: 'ম্যানুয়াল ছবি এডিট',
+    PRINT: 'প্রিন্ট',
+    RECHARGE: 'ক্রেডিট রিচার্জ',
+    AI_TEMPLATE: 'এআই টেমপ্লেট',
+    FORM_FILL: 'ফর্ম পূরণ',
+    EXTENSION_FILL: 'এক্সটেনশন ফর্ম',
+    BULK_PHOTO: 'বাল্ক ছবি এডিট',
+    QUESTION_PAPER: 'প্রশ্নপত্র',
+    MIGRATION: 'ব্যালেন্স স্থানান্তর',
+  },
+  en: {
+    DOCUMENT: 'Document',
+    IMAGE: 'AI photo edit',
+    IMAGE_MANUAL: 'Manual photo edit',
+    PRINT: 'Print',
+    RECHARGE: 'Credit recharge',
+    AI_TEMPLATE: 'AI template',
+    FORM_FILL: 'Form fill',
+    EXTENSION_FILL: 'Extension form',
+    BULK_PHOTO: 'Bulk photo edit',
+    QUESTION_PAPER: 'Question paper',
+    MIGRATION: 'Balance transfer',
+  },
+};
+
+export function ledgerLabel(tx, lang) {
+  const named = tx?.metadata?.templateName || tx?.metadata?.planName;
+  if (named) return named;
+  const table = MODULE_LABELS[lang] || MODULE_LABELS.en;
+  if (tx?.module && table[tx.module]) return table[tx.module];
+  // An enum this build has not seen yet reads better as "Question paper" than
+  // as QUESTION_PAPER, so unknown codes are de-slugged rather than printed raw.
+  const raw = tx?.module || tx?.source || '';
+  return raw ? raw.charAt(0) + raw.slice(1).toLowerCase().replace(/_/g, ' ') : '';
+}
+
+/**
  * "আজ, ১১:০৪" / "৩ দিন আগে" — the credit ledger's relative timestamps.
  *
  * Deliberately coarse. The ledger answers "when roughly did this happen", and a
