@@ -235,21 +235,84 @@ export function GradientWord({ children, style, gradient = GRADIENT.brand }) {
 }
 
 /**
- * The app's mark.
+ * The app's mark, verbatim from the design system's rule:
  *
- * The design system is explicit that this product has no drawn logo — wherever
- * a mark would go, set the name in Anek Bangla 800 with one word gradient
- * filled, and do not draw one. "SohozKaj" is the parent platform and stays
- * plain; "Template" is what this app is, so it takes the gradient.
+ *   "No logo exists for Easy AI Photo Edit. `assets/logo.svg` and its variants
+ *    are SohozKaj's parent-platform marks, kept for reference only. Wherever an
+ *    Easy AI Photo Edit mark would go, set the name in Anek Bangla 800 with
+ *    'AI' filled by `--gradient-brand`. Do not draw a mark."
  *
- * One component rather than the same three elements copied into onboarding and
- * login: it is the product's name, and it should only ever be changed once.
+ * So: three elements, one gradient word, and `GradientWord`'s default *is*
+ * `--gradient-brand` (red→orange) — not the violet account ramp. Do not swap it.
+ *
+ * One component rather than the same elements copied into onboarding and the
+ * auth screens: it is the product's name, and it should only ever change once.
  */
 export function Wordmark({ size = 24 }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-      <Text style={[heading(size, '800'), { color: COLOR.ink800 }]}>SohozKaj </Text>
-      <GradientWord style={heading(size, '800')}>Template</GradientWord>
+      <Text style={[heading(size, '800'), { color: COLOR.ink800 }]}>Easy </Text>
+      <GradientWord style={heading(size, '800')}>AI</GradientWord>
+      <Text style={[heading(size, '800'), { color: COLOR.ink800 }]}> Photo Edit</Text>
+    </View>
+  );
+}
+
+/**
+ * The two-tab language switch, ported from the website's `LanguageSwitcher`:
+ * a 24px outlined chip, EN then বাং, the chosen one filled in brand orange.
+ *
+ * It is small on purpose. This sits in a screen's top corner, and it is a
+ * *setting*, not an action — at the size of a button it competes with the
+ * sign-in the screen is actually for.
+ *
+ * Shared with the ported auth screens (`authUi.jsx`), which is why it is the one
+ * control those screens take from this file: the website's switcher and
+ * onboarding's are the same control.
+ *
+ * It belongs on every screen a person can reach *before* signing in: the
+ * language lives in AsyncStorage, not on the account, and Profile — where it is
+ * otherwise changed — sits behind the auth gate. Someone who reads only Bengali
+ * must be able to switch before, not after, filling in a registration form.
+ */
+export function LangSwitch({ lang, onSelect }) {
+  const Tab = ({ code, label }) => {
+    const on = lang === code;
+    return (
+      <Pressable
+        onPress={() => onSelect(code)}
+        // The chip is deliberately smaller than a comfortable touch target, so
+        // the slop makes up the difference rather than the padding.
+        hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+        style={{
+          borderRadius: RADIUS.xs,
+          paddingVertical: 3,
+          paddingHorizontal: 7,
+          backgroundColor: on ? COLOR.orange600 : 'transparent',
+        }}
+      >
+        <Text style={[heading(10.5, '700'), { color: on ? COLOR.white : COLOR.ink500 }]}>
+          {label}
+        </Text>
+      </Pressable>
+    );
+  };
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+        padding: 2,
+        borderWidth: 1,
+        borderColor: GREY.border,
+        borderRadius: RADIUS.sm,
+        backgroundColor: COLOR.white,
+      }}
+    >
+      <Tab code="en" label="EN" />
+      <Tab code="bn" label="বাং" />
     </View>
   );
 }
@@ -331,6 +394,39 @@ export function Input({ multiline = false, invalid = false, style, ...props }) {
       ]}
       {...props}
     />
+  );
+}
+
+/**
+ * The tinted box a form puts a server's answer in.
+ *
+ * Form errors do not go under the field that happens to be nearest: what comes
+ * back from `/auth/*` is usually about the submission as a whole ("wrong
+ * password", "that code expired"), so it gets its own box above the button —
+ * the shape the sign-in screen has always used.
+ */
+const NOTICE_TONES = {
+  error: { bg: COLOR.red050, border: 'rgba(250,16,20,.2)', ink: COLOR.redInk },
+  info: { bg: COLOR.violet050, border: 'rgba(152,16,250,.18)', ink: COLOR.ink600 },
+};
+
+export function Notice({ children, tone = 'error', style }) {
+  const c = NOTICE_TONES[tone] || NOTICE_TONES.error;
+  return (
+    <View
+      style={[
+        {
+          backgroundColor: c.bg,
+          borderWidth: 1,
+          borderColor: c.border,
+          borderRadius: RADIUS.lg,
+          padding: 12,
+        },
+        style,
+      ]}
+    >
+      <Text style={[body(12.5), { color: c.ink, lineHeight: 19 }]}>{children}</Text>
+    </View>
   );
 }
 

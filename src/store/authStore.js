@@ -30,6 +30,17 @@ export const useAuthStore = create(
         }
       },
 
+      /**
+       * Take the `{ user, token }` a *registration* answered with.
+       *
+       * `/auth/register` and `/auth/verify-and-login` both end with a signed-in
+       * session, exactly like `/auth/login` — so they land here rather than
+       * making the sign-up screen reach into `set()` itself, and the token
+       * reaches the API client through the same subscription at the bottom of
+       * this file.
+       */
+      adoptSession: ({ user, token }) => set({ user, token, isAuthenticated: true, isLoading: false }),
+
       logout: () => set({ user: null, token: null, isAuthenticated: false }),
 
       /**

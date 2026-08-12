@@ -120,6 +120,36 @@ export const GRADIENT = {
   },
 };
 
+/**
+ * The SohozKaj website's palette — for the screens that are ports of it.
+ *
+ * Sign-in, sign-up and password reset are the same account system as
+ * sohozkaj.com, and they are built to look like it: someone who registered on
+ * the website should recognise the form they are filling in. Those three
+ * screens are the *only* place these values belong — everything inside the app
+ * proper is the AI-template design system above.
+ *
+ * Transcribed from `sohozkaj-app`: the brand `orange` scale its Tailwind config
+ * overrides, and the zinc scale its forms are built on. Two radii come with it,
+ * because `rounded-md` inputs are half of why that form looks the way it does.
+ */
+export const SK = {
+  orange: '#F0910A', // orange-500 — buttons, links, the progress fill
+  orangeDark: '#E68A00', // orange-600 — pressed
+  orangeSoft: '#FFC033', // orange-400 — a filled OTP box
+  ink: '#27272A', // zinc-800 — step headings
+  label: '#3F3F46', // zinc-700 — field labels
+  body: '#52525B', // zinc-600 — checkbox and footer text
+  muted: '#71717A', // zinc-500 — subtitles, timers
+  faint: '#A1A1AA', // zinc-400 — field icons, placeholders
+  border: '#D4D4D8', // zinc-300 — input borders
+  hairline: '#E4E4E7', // zinc-200 — card border, progress track
+  danger: '#EF4444', // red-500 — asterisks and field errors
+  page: '#FAFAFA', // zinc-50 — the page behind the card
+  radius: 6, // rounded-md — inputs, buttons, OTP boxes
+  radiusCard: 8, // rounded-lg — the card
+};
+
 // ── Radius ──────────────────────────────────────────────────────────────────
 export const RADIUS = {
   xs: 5,

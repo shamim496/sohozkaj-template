@@ -14,8 +14,19 @@ const apiClient = axios.create({
   timeout: 60000,
 });
 
-// Endpoints that must never carry an Authorization header.
-const PUBLIC_ENDPOINTS = ['/auth/login', '/auth/send-otp', '/auth/verify-otp'];
+// Endpoints that must never carry an Authorization header. Registration is on
+// the list for a second reason as well: `/auth/register` answers "phone not
+// verified" with a 401, which must not be mistaken for an expired session.
+const PUBLIC_ENDPOINTS = [
+  '/auth/login',
+  '/auth/send-otp',
+  '/auth/verify-otp',
+  '/auth/pre-register',
+  '/auth/register',
+  '/auth/verify-and-login',
+  '/auth/change-registration-phone',
+  '/auth/send-registration-email-otp',
+];
 
 // A 401 from these is a normal failed-credentials response, not an expired
 // session — never force a logout for them.

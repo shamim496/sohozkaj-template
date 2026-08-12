@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, GradientWord, Wordmark } from '../src/components/ui';
+import { Button, GradientWord, LangSwitch, Wordmark } from '../src/components/ui';
 import { COLOR, GREY, RADIUS, body, heading } from '../src/constants/theme';
 import { useLangStore, useT } from '../src/i18n';
 import aiTemplateService from '../src/services/aiTemplateService';
@@ -63,32 +63,6 @@ export default function Onboarding() {
     router.replace('/login');
   };
 
-  const LangTab = ({ code, label }) => {
-    const on = lang === code;
-    return (
-      <Pressable
-        onPress={() => setLang(code)}
-        style={{
-          borderRadius: RADIUS.pill,
-          paddingVertical: 6,
-          paddingHorizontal: 12,
-          backgroundColor: on ? COLOR.white : 'transparent',
-          ...(on
-            ? {
-                shadowColor: '#101828',
-                shadowOpacity: 0.08,
-                shadowRadius: 2,
-                shadowOffset: { width: 0, height: 1 },
-                elevation: 1,
-              }
-            : null),
-        }}
-      >
-        <Text style={[heading(12, '700'), { color: on ? COLOR.ink800 : GREY.label }]}>{label}</Text>
-      </Pressable>
-    );
-  };
-
   return (
     <View
       style={{
@@ -101,18 +75,7 @@ export default function Onboarding() {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Wordmark size={17} />
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 2,
-            backgroundColor: '#F3F4F6',
-            borderRadius: RADIUS.pill,
-            padding: 3,
-          }}
-        >
-          <LangTab code="bn" label="বাংলা" />
-          <LangTab code="en" label="EN" />
-        </View>
+        <LangSwitch lang={lang} onSelect={setLang} />
       </View>
 
       <View style={{ flex: 1, justifyContent: 'center', gap: 20, paddingVertical: 32 }}>

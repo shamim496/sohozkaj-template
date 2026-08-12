@@ -16,8 +16,14 @@ import * as Sharing from 'expo-sharing';
  * matters is the one in their photo library, not ours.
  */
 
+// The cache folder is internal and never seen, so it keeps its name — renaming
+// it would only orphan whatever is mid-flight in it.
 const WORK_DIR_NAME = 'sohozkaj-template';
-const ALBUM_NAME = 'SohozKaj Template';
+
+// This one IS seen: it is the album the phone's gallery shows saved results in,
+// so it carries the app's name. Renaming it leaves anything saved under the old
+// name where it is — the library groups by album, it does not move assets.
+const ALBUM_NAME = 'Easy AI Photo Edit';
 
 function workDir() {
   const dir = new Directory(Paths.cache, WORK_DIR_NAME);

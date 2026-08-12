@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from '../src/components/AppHeader';
 import { toast } from '../src/components/Toast';
-import { Button, Field, Input, Screen } from '../src/components/ui';
-import { COLOR, LAYOUT, RADIUS, body } from '../src/constants/theme';
+import { Button, Field, Input, Notice, Screen } from '../src/components/ui';
+import { COLOR, LAYOUT } from '../src/constants/theme';
 import { useT } from '../src/i18n';
 import authApi from '../src/services/authApi';
 
@@ -94,19 +94,7 @@ export default function ChangePassword() {
             {/* The server's rejection is usually about the *current* password,
                 so it goes in its own box rather than under whichever field the
                 error happens to sit next to. Same shape as the sign-in screen. */}
-            {error ? (
-              <View
-                style={{
-                  backgroundColor: '#FFF1F0',
-                  borderWidth: 1,
-                  borderColor: 'rgba(250,16,20,.2)',
-                  borderRadius: RADIUS.lg,
-                  padding: 12,
-                }}
-              >
-                <Text style={[body(12.5), { color: COLOR.redInk, lineHeight: 19 }]}>{error}</Text>
-              </View>
-            ) : null}
+            {error ? <Notice>{error}</Notice> : null}
 
             <Button label={t.saveProfile} fullWidth loading={busy} onPress={submit} />
           </View>

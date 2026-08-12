@@ -1,7 +1,13 @@
-# SohozKaj Template
+# Easy AI Photo Edit
 
 A React Native (Expo) app with exactly one feature: pick a template, add one
 photo, generate. The user never writes a prompt — every template carries its own.
+
+It is a SohozKaj product and signs in with a SohozKaj account, but the app's own
+name is **Easy AI Photo Edit** — which is what the design system, the Expo slug
+(`easy-ai-photo-edit`), the URL scheme (`easyaiphotoedit`) and the `eape-*`
+storage keys have always called it. The repository folder and the git remote
+still say `sohozkaj-template`; renaming those is a separate, manual job.
 
 It talks to the same SohozKaj API as `sohozkaj-studio`, using the same client and
 the same session rules, but only the AI-template half of it:
@@ -16,9 +22,12 @@ the same session rules, but only the AI-template half of it:
 | **Profile** | Account, language, two local switches, shop, sign out | `GET /api/auth/me`, `GET /api/office-spaces` |
 | **My profile** | Editing the account, avatar, password | `PUT /api/auth/profile`, `POST /api/auth/profile/picture`, `/change-password` |
 | **Payments** | What this account has paid for, and a recheck | `GET /api/payments/history` |
+| **Sign in** | Phone or email + password, remember me | `POST /api/auth/login` |
+| **Sign up** | Country, number, email, name, password, then the code | `POST /api/auth/pre-register`, `/verify-otp`, `/register` |
+| **Forgot password** | Number → SMS code → new password | `POST /api/auth/forgot-password`, `/reset-password` |
 
-Accounts are created in the main SohozKaj app; this one signs in with the same
-credentials and has no register or password-reset flow.
+It is the same account as the main SohozKaj app, from either direction: one made
+here signs into the website, and one made there signs in here.
 
 ---
 
@@ -67,6 +76,8 @@ app/
   _layout.jsx          splash held until auth, settings and language rehydrate
   onboarding.jsx       three slides, once
   login.jsx
+  register.jsx         details → SMS or email code → account, in one route
+  forgot-password.jsx  number → SMS code + new password
   credits.jsx
   profile-edit.jsx     the editable account form
   change-password.jsx
@@ -82,10 +93,14 @@ app/
 
 src/
   components/          design-system primitives, ported from _ds/
+    authUi.jsx         the WEBSITE's form language — the three auth screens only
+    OtpInput           six boxes, one hidden field (SMS autofill needs one)
+    PickerSheet        searchable sheet — the sign-up country list
     TemplateMasonry    virtualised masonry — every unbounded gallery
     TemplateGrid       plain dealt masonry — bounded lists only (picker sheet)
   components/icons/    GENERATED from the design system's module-icon SVGs
   constants/theme.js   the design tokens — the only styling source
+  constants/countries  GENERATED — dial codes + names for the sign-up picker
   i18n/                bn + en, Bengali first
   lib/                 env, session, files, image, format
   services/            axios client + one module per API area
@@ -104,9 +119,18 @@ and two interactive prototypes (`Easy AI Photo Edit v2.dc.html` is the newer).
 It was built against a mock, so a few things it draws have no server behind them.
 Each departure is deliberate and commented at the code that makes it:
 
-**A sign-in screen was added.** Every AI-template endpoint sits behind
-`authenticate`, including the plain list, so there is nothing to show before a
-token exists. Built from the design's own primitives.
+**A sign-in screen was added, and sign-up and password reset with it.** Every
+AI-template endpoint sits behind `authenticate`, including the plain list, so
+there is nothing to show before a token exists.
+
+Those three are **ports of sohozkaj.com's own auth pages**, not of this design
+system: the SohozKaj mark over the same subtitle, a white card with a zinc
+hairline, `rounded-md` inputs with a grey glyph at the head, one solid-orange
+button. It is the same account system, so the form a person filled in on the
+website is the form they get here. They are built on `src/components/authUi.jsx`
+and the `SK` palette in `theme.js` — and on nothing in `ui.jsx` except the
+language switch, because averaging the two design systems would produce a third
+that is neither. `ui.jsx` inside the app, `authUi.jsx` at its door.
 
 **A shop row was added to Profile.** Every credit-charging endpoint refuses a
 non-admin caller without an `officeSpaceId` — that is the shop whose balance the
@@ -156,6 +180,60 @@ another phone.
 ---
 
 ## Things worth knowing before changing something
+
+**Signing up is three calls, and the middle one is not optional.**
+`/auth/pre-register` writes an unverified row and texts the code, `/auth/verify-otp`
+spends it, `/auth/register` creates the account and answers with a session.
+`register` re-checks the verification server-side, so a client that skips ahead
+gets a 401 — which is also why `/auth/register` is on the API client's public
+list: that 401 is an unverified number, not an expired session.
+
+**New accounts register as OWNER.** `AuthService.register` grants the signup
+bonus and creates the default "Personal Space" office space for OWNER only, and
+every credit-charging endpoint refuses a non-admin caller that has no office
+space. An OPERATOR signed up here would reach the gallery with no credits, no
+shop and no way to generate. The website keeps the OPERATOR path for staff an
+owner adds.
+
+**The country on the sign-up form decides how the code travels.** The backend
+routes it: Bangladesh (or unset) gets an SMS, every other country gets an email
+— which is why the email field is optional for BD and required elsewhere, and
+why the resend, the OTP `purpose` and `verificationMethod` on the final
+`register` all have to agree with the country. They are derived from it in one
+place in `app/register.jsx`; a purpose that disagrees reads as "not verified" at
+the very end of an otherwise perfect flow.
+
+`change-registration-phone` is the SMS path only — it always answers by SMS. A
+number corrected on the email path starts a fresh pre-registration instead.
+
+**Two design systems live here, deliberately.** `ui.jsx` + the tokens at the top
+of `theme.js` are the AI-template system — pill buttons, 12px radii, the
+violet→orange account gradient. `authUi.jsx` + `SK` in the same file are
+sohozkaj.com's, and reach exactly three screens. Do not "unify" them: the point
+of the auth screens looking like the website is that they *are* the website's
+account. Anything new inside the app uses `ui.jsx`.
+
+The auth screens borrow the website's *form*, not its *mark*: they are headed by
+`Wordmark` like every other screen. SohozKaj's logo is the parent platform's, and
+the design system is explicit that Easy AI Photo Edit has none — the name in Anek
+Bangla 800 with "AI" gradient-filled is the mark. Whose account it is gets said in
+the subtitle, in words.
+
+**Phone numbers are validated against the server's own rule, not a library.**
+`libphonenumber-js` (which the website carries) is not a dependency here: the
+BD local form has its own pattern, and everything else is checked against the
+E.164 rule `Validator.validatePhone` enforces. A stricter check here would
+reject numbers the account system accepts. `src/constants/countries.js` is
+**generated** from the website's own data — provenance is in the file's header.
+
+Sign-up asks for country, number, email, name and password, and nothing else.
+District is not on the form: the schema takes it as nullable, and it is editable
+in Profile, where filling it in is part of what earns the profile-completion
+bonus. Adding a field back here costs a signup.
+
+Password reset stays Bangladesh-only, because `/auth/forgot-password` is: its
+schema takes eleven digits and the code goes by SMS. A non-BD account resets on
+the website.
 
 **The gallery is fetched once and filtered locally.** That looks like a shortcut
 and is not: `GET /api/ai-templates` runs the category filter in SQL but the

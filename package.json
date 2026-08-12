@@ -1,7 +1,7 @@
 {
   "name": "easy-ai-photo-edit",
   "version": "1.0.0",
-  "description": "SohozKaj Template — pick a template, add one photo, generate. Nothing else.",
+  "description": "Easy AI Photo Edit — pick a template, add one photo, generate. Nothing else.",
   "main": "expo-router/entry",
   "private": true,
   "scripts": {

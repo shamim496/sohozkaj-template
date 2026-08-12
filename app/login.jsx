@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { Redirect, router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
-import { Button, Field, Input, Wordmark } from '../src/components/ui';
-import { COLOR, GREY, RADIUS, body } from '../src/constants/theme';
+import { Text, View } from 'react-native';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import {
+  AuthButton,
+  AuthCheckbox,
+  AuthField,
+  AuthInput,
+  AuthLink,
+  AuthNotice,
+  AuthPassword,
+  AuthScreen,
+} from '../src/components/authUi';
+import { SK, body } from '../src/constants/theme';
 import { useT } from '../src/i18n';
 import { useAuthStore } from '../src/store/authStore';
 import { useCreditStore } from '../src/store/creditStore';
@@ -13,37 +20,41 @@ import { useOfficeSpaceStore } from '../src/store/officeSpaceStore';
 /**
  * Sign in.
  *
- * The design has no sign-in screen — it starts at the gallery. It cannot: every
- * AI-template endpoint sits behind `authenticate`, including the plain list, so
- * there is nothing to show before a token exists. This screen is therefore an
- * addition, built from the design's own primitives rather than borrowed from
- * another app.
+ * The AI-template design has no sign-in screen — it starts at the gallery. It
+ * cannot: every AI-template endpoint sits behind `authenticate`, including the
+ * plain list, so there is nothing to show before a token exists.
  *
- * Accounts are created in the main SohozKaj app, so there is deliberately no
- * register or password-reset flow here — the same rule sohozkaj-studio follows.
+ * So this screen, sign-up and password reset are ports of sohozkaj.com's own —
+ * see `src/components/authUi.jsx`. They are the same account system, and the
+ * form should be the one the user already knows.
  *
  * `identifier` is the backend's unified login field and takes a phone number or
  * an email; the older `phone`-only body still works but narrows what a user can
- * type for no reason.
+ * type for no reason. An email only works once it has been *verified*, which the
+ * SMS signup does not do — so for an account created in this app the phone
+ * number is the login handle until an email is confirmed elsewhere.
  */
 export default function Login() {
-  const insets = useSafeAreaInsets();
   const { t } = useT();
+  // The password-reset screen hands the number back so only the password is
+  // left to type.
+  const params = useLocalSearchParams();
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const login = useAuthStore((s) => s.login);
   const fetchOfficeSpaces = useOfficeSpaceStore((s) => s.fetch);
   const refreshCredits = useCreditStore((s) => s.refresh);
 
-  const [identifier, setIdentifier] = useState('');
+  const [identifier, setIdentifier] = useState(typeof params.phone === 'string' ? params.phone : '');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   if (isAuthenticated) return <Redirect href="/(tabs)" />;
 
   const submit = async () => {
+    if (busy) return;
     if (!identifier.trim() || !password) {
       setError(t.signInMissing);
       return;
@@ -51,13 +62,22 @@ export default function Login() {
     setBusy(true);
     setError('');
     try {
-      await login({ identifier: identifier.trim(), password });
+      // `rememberMe` is the server's own flag: it signs a 180-day token instead
+      // of the default seven. Nothing is stored differently on this side.
+      await login({ identifier: identifier.trim(), password, rememberMe: remember });
       // The office space decides which balance credits come out of, and every
       // generate needs it — fetch it now rather than on the first generate,
       // where a failure would look like the generate itself was broken.
       await Promise.all([fetchOfficeSpaces().catch(() => {}), refreshCredits().catch(() => {})]);
       router.replace('/(tabs)');
     } catch (err) {
+      // A registration that never got past the SMS code answers here, not at
+      // sign-up. Send it to the code screen with the number rather than leaving
+      // a correct password looking like a wrong one.
+      if (err.code === 'PHONE_NOT_VERIFIED') {
+        router.push({ pathname: '/register', params: { phone: identifier.trim(), verify: '1' } });
+        return;
+      }
       setError(err.message || t.loadFailed);
     } finally {
       setBusy(false);
@@ -65,101 +85,61 @@ export default function Login() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: COLOR.white }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <AuthScreen
+      subtitle={t.signInBody}
+      footer={
+        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5 }}>
+          <Text style={[body(13), { color: SK.body }]}>{t.noAccount}</Text>
+          <AuthLink label={t.signUp} bold onPress={() => router.push('/register')} />
+        </View>
+      }
     >
-      <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: 'center',
-          padding: 24,
-          paddingTop: insets.top + 24,
-          paddingBottom: insets.bottom + 24,
-        }}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* The design system is explicit that this product has no mark: set the
-            name in Anek Bangla 800 with "AI" gradient-filled. Do not draw one. */}
-        <View style={{ alignItems: 'center', marginBottom: 32 }}>
-          <Wordmark size={24} />
-          <Text style={[body(13.5), { color: GREY.label, marginTop: 8, textAlign: 'center' }]}>
-            {t.signInBody}
-          </Text>
+      <View style={{ gap: 16 }}>
+        <AuthField label={t.phone} required>
+          <AuthInput
+            icon="phone"
+            value={identifier}
+            onChangeText={setIdentifier}
+            placeholder={t.phonePh}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="username"
+          />
+        </AuthField>
+
+        <AuthField label={t.password} required>
+          <AuthPassword
+            value={password}
+            onChangeText={setPassword}
+            placeholder={t.pwEnter}
+            autoComplete="current-password"
+            onSubmitEditing={submit}
+            returnKeyType="go"
+          />
+        </AuthField>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <AuthCheckbox checked={remember} onPress={() => setRemember((v) => !v)}>
+            <Text style={[body(13), { color: SK.body }]}>{t.rememberMe}</Text>
+          </AuthCheckbox>
+          <AuthLink
+            label={t.forgotLink}
+            disabled={busy}
+            onPress={() => router.push('/forgot-password')}
+          />
         </View>
 
-        <View style={{ gap: 16 }}>
-          <Field label={t.phone}>
-            <Input
-              value={identifier}
-              onChangeText={setIdentifier}
-              placeholder={t.phonePh}
-              keyboardType="default"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="username"
-            />
-          </Field>
+        {error ? <AuthNotice>{error}</AuthNotice> : null}
 
-          <Field label={t.password}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: COLOR.white,
-                borderWidth: 1,
-                borderColor: GREY.border,
-                borderRadius: RADIUS.lg,
-                paddingRight: 8,
-              }}
-            >
-              <Input
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                onSubmitEditing={submit}
-                returnKeyType="go"
-                style={{ flex: 1, borderWidth: 0, backgroundColor: 'transparent' }}
-              />
-              <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={8} style={{ padding: 6 }}>
-                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"
-                    stroke={GREY.label}
-                    strokeWidth={1.8}
-                  />
-                  <Path d="M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z" stroke={GREY.label} strokeWidth={1.8} />
-                  {!showPassword ? (
-                    <Path d="M4 20 20 4" stroke={GREY.label} strokeWidth={1.8} strokeLinecap="round" />
-                  ) : null}
-                </Svg>
-              </Pressable>
-            </View>
-          </Field>
-
-          {error ? (
-            <View
-              style={{
-                backgroundColor: '#FFF1F0',
-                borderWidth: 1,
-                borderColor: 'rgba(250,16,20,.2)',
-                borderRadius: RADIUS.lg,
-                padding: 12,
-              }}
-            >
-              <Text style={[body(12.5), { color: COLOR.redInk, lineHeight: 19 }]}>{error}</Text>
-            </View>
-          ) : null}
-
-          <Button label={t.signIn} fullWidth loading={busy} onPress={submit} />
-        </View>
-
-        <Text style={[body(12), { color: GREY.label, textAlign: 'center', marginTop: 32 }]}>
-          {t.noAccount}
-        </Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        <AuthButton label={t.signIn} loading={busy} onPress={submit} />
+      </View>
+    </AuthScreen>
   );
 }

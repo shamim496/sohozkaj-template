@@ -1,7 +1,7 @@
 const { withAppBuildGradle } = require('expo/config-plugins');
 
 /**
- * Gives debug builds their own application id (`com.sohozkaj.template.dev`).
+ * Gives debug builds their own application id (`com.sohozkaj.easyaiphotoedit.dev`).
  *
  * A debug and a release build of the same id cannot coexist on one device:
  * their signing keys differ, so installing the second fails with
