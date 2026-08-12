@@ -1,0 +1,107 @@
+{
+  "expo": {
+    "name": "SohozKaj Template",
+    "slug": "easy-ai-photo-edit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "easyaiphotoedit",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#ffffff",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.sohozkaj.easyaiphotoedit",
+      "buildNumber": "1",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Take a photo to use with a template.",
+        "NSPhotoLibraryAddUsageDescription": "Generated photos are saved to your photo library.",
+        "NSPhotoLibraryUsageDescription": "Pick a photo to use with a template."
+      }
+    },
+    "android": {
+      "package": "com.sohozkaj.easyaiphotoedit",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#ff9900",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "plugins": [
+      "./plugins/withDebugAppIdSuffix",
+      "./plugins/withAndroidBuildEnv",
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ff9900",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ],
+      "expo-image",
+      "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "Save generated photos to your gallery.",
+          "photosPermission": "Pick a photo to use with a template.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Pick a photo to use with a template.",
+          "cameraPermission": "Take a photo to use with a template."
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "AnekBangla",
+                "fontDefinitions": [
+                  { "path": "./assets/fonts/AnekBangla_400Regular.ttf", "weight": 400 },
+                  { "path": "./assets/fonts/AnekBangla_500Medium.ttf", "weight": 500 },
+                  { "path": "./assets/fonts/AnekBangla_600SemiBold.ttf", "weight": 600 },
+                  { "path": "./assets/fonts/AnekBangla_700Bold.ttf", "weight": 700 },
+                  { "path": "./assets/fonts/AnekBangla_800ExtraBold.ttf", "weight": 800 }
+                ]
+              },
+              {
+                "fontFamily": "NotoSansBengali",
+                "fontDefinitions": [
+                  { "path": "./assets/fonts/NotoSansBengali_400Regular.ttf", "weight": 400 },
+                  { "path": "./assets/fonts/NotoSansBengali_500Medium.ttf", "weight": 500 },
+                  { "path": "./assets/fonts/NotoSansBengali_600SemiBold.ttf", "weight": 600 },
+                  { "path": "./assets/fonts/NotoSansBengali_700Bold.ttf", "weight": 700 }
+                ]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./assets/fonts/AnekBangla_400Regular.ttf",
+              "./assets/fonts/AnekBangla_500Medium.ttf",
+              "./assets/fonts/AnekBangla_600SemiBold.ttf",
+              "./assets/fonts/AnekBangla_700Bold.ttf",
+              "./assets/fonts/AnekBangla_800ExtraBold.ttf",
+              "./assets/fonts/NotoSansBengali_400Regular.ttf",
+              "./assets/fonts/NotoSansBengali_500Medium.ttf",
+              "./assets/fonts/NotoSansBengali_600SemiBold.ttf",
+              "./assets/fonts/NotoSansBengali_700Bold.ttf"
+            ]
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
